@@ -27,12 +27,17 @@ public class GameManager : MonoBehaviour
     // Called by FireflySpawner when a firefly is tapped.
     public void OnFireflyCaught(Firefly firefly)
     {
-        if (_celebrating) return; // let the celebration play out before counting more
-
         FireflyColorType color = firefly.ColorType;
 
+        // Always send the firefly on its way and destroy it — a tap should
+        // never leave a firefly stuck on screen. If a celebration is already
+        // playing (e.g. it was tapped in the couple seconds before reset),
+        // it still flies into the jar and disappears, it just doesn't count
+        // toward the next round or wake up the animals.
         firefly.FlyToJarAndDestroy(jarPosition.position, () =>
         {
+            if (_celebrating) return;
+
             _caughtCount++;
             jarController.SetFillLevel(_caughtCount, fireflyGoal);
 
@@ -55,7 +60,20 @@ public class GameManager : MonoBehaviour
         if (celebrationSparkleBurstPrefab != null)
         {
             GameObject burst = Instantiate(celebrationSparkleBurstPrefab, jarPosition.position, Quaternion.identity);
-            Destroy(burst, celebrationDuration);
+
+            CelebrationBurst burstAnim = burst.GetComponent<CelebrationBurst>();
+            if (burstAnim != null)
+            {
+                // Let it play its own grow/hold/fade sequence, timed to fit
+                // within the celebration window, and self-destruct.
+                burstAnim.SetLifetime(celebrationDuration);
+            }
+            else
+            {
+                // No animation script attached — just a static sprite, so
+                // hard-destroy it after the celebration window instead.
+                Destroy(burst, celebrationDuration);
+            }
         }
 
         if (celebrationSound != null)
