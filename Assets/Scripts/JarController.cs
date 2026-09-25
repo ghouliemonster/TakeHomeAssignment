@@ -1,72 +1,98 @@
 using UnityEngine;
 using System.Collections;
 
-// Attach to the jar GameObject. Expects two child SpriteRenderers:
-// - jarOutline: the line-art jar PNG you were given (static, always visible)
-// - glowFill: a soft blob/glyph sprite (use the Firefly Glow #FFD166 or
-//   Highlights #FFF4E0 color) sized to sit inside the jar's body, alpha 0 at start.
-// No fill-state sprites were provided, so the "filling up" look is done with
-// this glow's alpha + scale rather than swapping sprites.
+// Attach to the jar GameObject, with two child SpriteRenderers stacked on
+// top of each other (same position/scale): rendererA and rendererB, assigned
+// in the inspector. They crossfade into each other so stage changes are a
+// soft blend, not a hard cut — keeps it in line with the "calm, never
+// abrupt" rule.
+//
+// Maps your 4 fill-stage sprites (empty / half-full / glowing full / glowing
+// full with sparkles) across the 10-catch goal:
+//   0 catches      -> Empty
+//   1-4 catches    -> HalfFull
+//   5-9 catches    -> GlowingFull
+//   10 catches     -> GlowingFullWithSparkles (celebration state)
 public class JarController : MonoBehaviour
 {
-    [Header("References")]
-    public SpriteRenderer glowFill;
-    public float fillTweenDuration = 0.35f;
-    public float maxGlowAlpha = 0.9f;
-    public Vector3 minGlowScale = new Vector3(0.3f, 0.3f, 1f);
-    public Vector3 maxGlowScale = new Vector3(1f, 1f, 1f);
+    [Header("Fill-stage sprites (from the reference sheet, redrawn at full res)")]
+    public Sprite emptySprite;
+    public Sprite halfFullSprite;
+    public Sprite glowingFullSprite;
+    public Sprite glowingFullWithSparklesSprite;
 
-    private Coroutine _tweenRoutine;
+    [Header("Crossfade")]
+    public SpriteRenderer rendererA;
+    public SpriteRenderer rendererB;
+    public float crossfadeDuration = 0.5f;
+
+    private SpriteRenderer _front;
+    private SpriteRenderer _back;
+    private Coroutine _fadeRoutine;
+    private Sprite _currentSprite;
 
     private void Awake()
     {
-        if (glowFill != null)
-        {
-            SetGlowInstant(0f);
-        }
+        _front = rendererA;
+        _back = rendererB;
+
+        _currentSprite = emptySprite;
+        _front.sprite = _currentSprite;
+        _front.color = new Color(1f, 1f, 1f, 1f);
+        _back.color = new Color(1f, 1f, 1f, 0f);
     }
 
     public void SetFillLevel(int caught, int max)
     {
-        float t = Mathf.Clamp01((float)caught / max);
-        if (_tweenRoutine != null) StopCoroutine(_tweenRoutine);
-        _tweenRoutine = StartCoroutine(TweenGlow(t));
+        Sprite target = GetSpriteForCount(caught, max);
+        if (target == _currentSprite) return;
+
+        _currentSprite = target;
+        if (_fadeRoutine != null) StopCoroutine(_fadeRoutine);
+        _fadeRoutine = StartCoroutine(Crossfade(target));
     }
 
-    private IEnumerator TweenGlow(float targetT)
+    private Sprite GetSpriteForCount(int caught, int max)
     {
-        Color startColor = glowFill.color;
-        float startAlpha = startColor.a;
-        Vector3 startScale = glowFill.transform.localScale;
+        if (caught <= 0) return emptySprite;
+        if (caught >= max) return glowingFullWithSparklesSprite;
 
-        float targetAlpha = targetT * maxGlowAlpha;
-        Vector3 targetScale = Vector3.Lerp(minGlowScale, maxGlowScale, targetT);
+        float t = (float)caught / max;
+        if (t < 0.5f) return halfFullSprite;
+        return glowingFullSprite;
+    }
+
+    private IEnumerator Crossfade(Sprite target)
+    {
+        _back.sprite = target;
+        _back.color = new Color(1f, 1f, 1f, 0f);
 
         float elapsed = 0f;
-        while (elapsed < fillTweenDuration)
+        while (elapsed < crossfadeDuration)
         {
             elapsed += Time.deltaTime;
-            float p = elapsed / fillTweenDuration;
-            float a = Mathf.Lerp(startAlpha, targetAlpha, p);
-            glowFill.color = new Color(startColor.r, startColor.g, startColor.b, a);
-            glowFill.transform.localScale = Vector3.Lerp(startScale, targetScale, p);
+            float t = elapsed / crossfadeDuration;
+            _front.color = new Color(1f, 1f, 1f, 1f - t);
+            _back.color = new Color(1f, 1f, 1f, t);
             yield return null;
         }
 
-        glowFill.color = new Color(startColor.r, startColor.g, startColor.b, targetAlpha);
-        glowFill.transform.localScale = targetScale;
-    }
+        // Swap roles so _front is always the fully-opaque, currently-shown sprite.
+        var temp = _front;
+        _front = _back;
+        _back = temp;
 
-    private void SetGlowInstant(float t)
-    {
-        Color c = glowFill.color;
-        glowFill.color = new Color(c.r, c.g, c.b, t * maxGlowAlpha);
-        glowFill.transform.localScale = Vector3.Lerp(minGlowScale, maxGlowScale, t);
+        _front.color = new Color(1f, 1f, 1f, 1f);
+        _back.color = new Color(1f, 1f, 1f, 0f);
     }
 
     // Called by GameManager once the celebration finishes.
     public void ResetJar()
     {
-        SetGlowInstant(0f);
+        if (_fadeRoutine != null) StopCoroutine(_fadeRoutine);
+        _currentSprite = emptySprite;
+        _front.sprite = emptySprite;
+        _front.color = new Color(1f, 1f, 1f, 1f);
+        _back.color = new Color(1f, 1f, 1f, 0f);
     }
 }
