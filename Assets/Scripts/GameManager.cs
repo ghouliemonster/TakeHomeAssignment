@@ -61,16 +61,17 @@ public class GameManager : MonoBehaviour
         {
             GameObject burst = Instantiate(celebrationSparkleBurstPrefab, jarPosition.position, Quaternion.identity);
 
-            CelebrationBurst burstAnim = burst.GetComponent<CelebrationBurst>();
-            if (burstAnim != null)
+            ICelebrationEffect effect = burst.GetComponent<ICelebrationEffect>();
+            if (effect != null)
             {
-                // Let it play its own grow/hold/fade sequence, timed to fit
-                // within the celebration window, and self-destruct.
-                burstAnim.SetLifetime(celebrationDuration);
+                // Let the effect manage its own animation/lifetime and
+                // self-destruct — works the same whether it's the
+                // scale-and-fade sprite or the firework explosion sheet.
+                effect.SetLifetime(celebrationDuration);
             }
             else
             {
-                // No animation script attached — just a static sprite, so
+                // No effect script attached — just a static sprite, so
                 // hard-destroy it after the celebration window instead.
                 Destroy(burst, celebrationDuration);
             }

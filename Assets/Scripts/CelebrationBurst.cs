@@ -6,7 +6,7 @@ using System.Collections;
 // just appears and vanishes. Self-destructs when done — GameManager doesn't
 // need to manage its lifetime directly.
 [RequireComponent(typeof(SpriteRenderer))]
-public class CelebrationBurst : MonoBehaviour
+public class CelebrationBurst : MonoBehaviour, ICelebrationEffect
 {
     [Header("Timing")]
     public float growDuration = 0.25f;
