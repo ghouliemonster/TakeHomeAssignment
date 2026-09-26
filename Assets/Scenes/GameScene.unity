@@ -891,8 +891,8 @@ MonoBehaviour:
   fireflyPrefab: {fileID: -8792715499638948752, guid: 67e7c3968a00f7246914940d5df83783, type: 3}
   gameManager: {fileID: 945651832}
   maxOnScreen: 6
-  minSpawnInterval: 1.2
-  maxSpawnInterval: 2.5
+  minSpawnInterval: 0.75
+  maxSpawnInterval: 1.5
   edgeInset: 1
   bottomInset: 2.5
 --- !u!4 &1245784725

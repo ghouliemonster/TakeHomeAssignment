@@ -143,7 +143,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Firefly
   yellowSprite: {fileID: 6741059632509321205, guid: 7b9a31b64f68d954db48810a73c4161b, type: 3}
   pinkSprite: {fileID: -4234218880744882493, guid: 72152021d6568d242b7a48fb477aac8c, type: 3}
-  greenSprite: {fileID: 8618162919961763766, guid: ef69cbc9a8e28e444afe593f8643a846, type: 3}
+  greenSprite: {fileID: 0}
   yellowWeight: 60
   pinkWeight: 20
   greenWeight: 20
